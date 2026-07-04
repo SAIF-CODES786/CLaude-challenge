@@ -21,4 +21,5 @@ Learned how AI can generate a structured Vedic astrology report using birth deta
 - Astrology Report
 - Screenshots
 
-"C:\Users\Saif Khan\Downloads\Saif_Khan_Vedic_Astrology_Report.docx"
+
+PDF LINK - "C:\Users\Saif Khan\Downloads\60 DAYS CLAUDE CHALLENGE\DAY 15\Saif_Khan_Vedic_Astrology_Report.docx"
