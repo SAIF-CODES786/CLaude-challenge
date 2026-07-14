@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Face Puzzle — Snap, Shuffle, Solve</title>
+<style>
+  :root{
+    --grad-1:#6366f1;
+    --grad-2:#8b5cf6;
+    --grad-3:#ec4899;
+    --accent:#6366f1;
+    --accent-dark:#4338ca;
+    --success:#22c55e;
+    --danger:#ef4444;
+    --text:#1e1b2e;
+    --text-light:#6b7280;
+    --card-radius:24px;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{
+    margin:0; padding:0; min-height:100vh; min-height:100dvh;
+    font-family:'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+    color:var(--text);
+    background:linear-gradient(135deg,var(--grad-1),var(--grad-2) 55%, var(--grad-3));
+    background-attachment:fixed;
+  }
+  body{
+    display:flex; flex-direction:column; align-items:center;
+  }
+  h1,h2,h3{ margin:0 0 8px; }
+  h1{ font-size:clamp(22px,5vw,30px); color:#fff; text-shadow:0 2px 10px rgba(0,0,0,0.2); }
+  .app-header{ text-align:center; padding:24px 16px 8px; }
+  .app-header p{ color:rgba(255,255,255,0.9); margin:0; font-size:14px; }
+
+  .screen{ width:100%; display:flex; flex-direction:column; align-items:center; padding:12px 16px 60px; flex:1; }
+
+  .card{
+    background:#fff; border-radius:var(--card-radius); padding:28px;
+    max-width:520px; width:100%; box-shadow:0 25px 60px rgba(0,0,0,0.28);
+    text-align:center; animation:pop .25s ease;
+  }
+  @keyframes pop{ from{ transform:scale(.94); opacity:0;} to{ transform:scale(1); opacity:1; } }
+
+  .btn{
+    border:none; border-radius:14px; padding:12px 20px; font-size:15px; font-weight:600;
+    cursor:pointer; transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .btn:active{ transform:scale(.96); }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+  .btn-primary{ background:linear-gradient(135deg,var(--grad-1),var(--grad-2)); color:#fff; box-shadow:0 8px 20px rgba(99,102,241,0.35); }
+  .btn-primary:hover:not(:disabled){ box-shadow:0 10px 26px rgba(99,102,241,0.5); }
+  .btn-secondary{ background:#f1f0ff; color:var(--accent-dark); border:2px solid #e4e2ff; }
+  .btn-secondary:hover{ background:#e6e4ff; }
+  .btn-large{ padding:14px 26px; font-size:16px; width:100%; }
+
+  /* ---- Camera Screen ---- */
+  .video-wrap{
+    position:relative; width:100%; max-width:380px; aspect-ratio:1/1; margin:8px auto 18px;
+    border-radius:18px; overflow:hidden; background:#111; box-shadow:inset 0 0 0 4px rgba(99,102,241,0.15);
+  }
+  #video{ width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block; visibility:hidden; }
+  .camera-loading{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:#fff; gap:12px; background:#111;
+  }
+  .spinner{
+    width:36px; height:36px; border-radius:50%; border:4px solid rgba(255,255,255,0.25);
+    border-top-color:#fff; animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .camera-error{
+    display:none; flex-direction:column; align-items:center; gap:14px; padding:24px 8px;
+    max-width:380px; margin:0 auto 8px;
+  }
+  .camera-error p{ margin:0; color:var(--danger); font-weight:600; font-size:15px; }
+  .error-actions{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+
+  /* ---- Setup Screen ---- */
+  .preview-img{
+    width:100%; max-width:280px; aspect-ratio:1/1; object-fit:cover; border-radius:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2); margin:8px auto 18px; display:block;
+  }
+  .difficulty-options{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-bottom:14px; }
+  .diff-btn{
+    flex:1; min-width:90px; background:#fff; border:2px solid #e4e2ff; border-radius:14px;
+    padding:14px 10px; font-weight:700; font-size:16px; color:var(--text); cursor:pointer;
+    display:flex; flex-direction:column; gap:4px; transition:all .15s ease;
+  }
+  .diff-btn span{ font-size:11px; font-weight:600; color:var(--text-light); text-transform:uppercase; letter-spacing:.5px; }
+  .diff-btn.active{ background:linear-gradient(135deg,var(--grad-1),var(--grad-2)); color:#fff; border-color:transparent; box-shadow:0 8px 20px rgba(99,102,241,0.35); }
+  .diff-btn.active span{ color:rgba(255,255,255,0.85); }
+  .toggle-row{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; color:var(--text-light); margin-bottom:16px; cursor:pointer; }
+  .toggle-row input{ width:16px; height:16px; }
+  .hint-text{ font-size:13px; color:var(--text-light); margin:0 0 16px; }
+  .setup-actions{ display:flex; gap:10px; }
+  .setup-actions .btn{ flex:1; }
+
+  /* ---- Game Screen ---- */
+  .stats-bar{
+    display:flex; gap:10px; flex-wrap:wrap; justify-content:center; background:rgba(255,255,255,0.95);
+    border-radius:16px; padding:12px 18px; margin-bottom:18px; box-shadow:0 10px 30px rgba(0,0,0,0.15);
+    max-width:520px; width:100%;
+  }
+  .stat{ display:flex; flex-direction:column; align-items:center; min-width:64px; flex:1; }
+  .stat-label{ font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--text-light); font-weight:700; }
+  .stat-value{ font-size:18px; font-weight:800; color:var(--accent-dark); }
+  .mono{ font-variant-numeric:tabular-nums; font-family:'Courier New', monospace; }
+
+  .puzzle-board{
+    position:relative; margin:0 auto 20px; border-radius:18px; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35); background:#ddd; touch-action:none;
+  }
+  .tile{
+    position:absolute; top:0; left:0; box-sizing:border-box;
+    background-repeat:no-repeat; border:2px solid rgba(255,255,255,0.55);
+    cursor:grab; touch-action:none; user-select:none; -webkit-user-drag:none;
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .tile.dragging{
+    cursor:grabbing; z-index:1000; border:3px solid #facc15;
+    box-shadow:0 14px 30px rgba(0,0,0,0.4);
+  }
+  .tile.correct{ border:3px solid var(--success); }
+  .tile-label{
+    position:absolute; top:3px; left:3px; background:rgba(0,0,0,0.55); color:#fff;
+    font-size:11px; font-weight:700; padding:1px 6px; border-radius:8px; display:none; pointer-events:none;
+  }
+  body.show-numbers .tile-label{ display:block; }
+
+  .game-actions{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; max-width:520px; }
+
+  /* ---- Overlays ---- */
+  .overlay{
+    position:fixed; inset:0; background:rgba(15,15,35,0.6); display:flex;
+    align-items:center; justify-content:center; z-index:300; padding:20px; animation:fadeIn .2s ease;
+  }
+  @keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
+  .results-card{ max-width:440px; }
+  .best-badge{
+    display:inline-block; background:linear-gradient(135deg,#facc15,#f59e0b); color:#7c2d12;
+    font-weight:800; font-size:13px; padding:6px 14px; border-radius:20px; margin-bottom:14px;
+  }
+  .results-grid{ display:flex; justify-content:space-around; gap:8px; margin:14px 0 20px; }
+  .results-grid > div{ display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .results-grid .stat-value{ font-size:20px; }
+  .lb-table{ width:100%; border-collapse:collapse; margin-bottom:18px; font-size:14px; }
+  .lb-table th{ text-align:left; color:var(--text-light); font-size:11px; text-transform:uppercase; padding:6px 8px; border-bottom:2px solid #f1f0ff; }
+  .lb-table td{ padding:8px; border-bottom:1px solid #f4f4fa; font-weight:600; }
+  .lb-table td.empty{ text-align:center; color:var(--text-light); font-weight:500; padding:18px 0; }
+  .results-actions{ display:flex; gap:10px; }
+  .results-actions .btn{ flex:1; }
+
+  .lb-toggle-btn{
+    position:fixed; top:16px; right:16px; z-index:150; width:50px; height:50px; border-radius:50%;
+    border:none; background:#fff; font-size:22px; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,0.3);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .lb-card{ max-width:420px; }
+  .lb-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .btn-close{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--text-light); padding:4px 8px; }
+  .lb-tabs{ display:flex; gap:8px; margin-bottom:14px; }
+  .lb-tab{
+    flex:1; padding:8px; border-radius:10px; border:2px solid #e4e2ff; background:#fff; font-weight:700;
+    cursor:pointer; color:var(--text-light);
+  }
+  .lb-tab.active{ background:linear-gradient(135deg,var(--grad-1),var(--grad-2)); color:#fff; border-color:transparent; }
+
+  @media (max-width:480px){
+    .card{ padding:20px; border-radius:18px; }
+    .stat-value{ font-size:16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <h1>🧩 Face Puzzle</h1>
+  <p>Snap a photo, scramble it, and race to put yourself back together.</p>
+</div>
+
+<button id="lbToggleBtn" class="lb-toggle-btn" title="Leaderboard">🏆</button>
+
+<!-- CAMERA SCREEN -->
+<div id="cameraScreen" class="screen">
+  <div class="card">
+    <h2>Take Your Photo</h2>
+    <div class="video-wrap" id="videoWrap">
+      <video id="video" autoplay muted playsinline></video>
+      <div class="camera-loading" id="cameraLoading">
+        <div class="spinner"></div>
+        <p>Starting camera…</p>
+      </div>
+    </div>
+    <div class="camera-error" id="cameraError">
+      <p id="cameraErrorText"></p>
+      <div class="error-actions">
+        <button id="retryCameraBtn" class="btn btn-primary">Try Again</button>
+        <button id="uploadBtn" class="btn btn-secondary">Upload a Photo Instead</button>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" hidden>
+    <button id="takePhotoBtn" class="btn btn-primary btn-large" disabled>📸 Take Photo</button>
+  </div>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setupScreen" class="screen" style="display:none;">
+  <div class="card">
+    <h2>Choose Difficulty</h2>
+    <img id="previewImg" class="preview-img" alt="Captured photo preview">
+    <div class="difficulty-options">
+      <button class="btn diff-btn active" data-size="3">3×3<span>Easy</span></button>
+      <button class="btn diff-btn" data-size="4">4×4<span>Medium</span></button>
+      <button class="btn diff-btn" data-size="5">5×5<span>Hard</span></button>
+    </div>
+    <label class="toggle-row"><input type="checkbox" id="numbersToggle" checked> Show piece numbers</label>
+    <p class="hint-text">Drag a piece onto another to swap them. Match every piece to win!</p>
+    <div class="setup-actions">
+      <button id="retakeBtn" class="btn btn-secondary">↺ Retake Photo</button>
+      <button id="startBtn" class="btn btn-primary">Start Puzzle ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="gameScreen" class="screen" style="display:none;">
+  <div class="stats-bar">
+    <div class="stat"><span class="stat-label">Time</span><span id="timerDisplay" class="stat-value mono">00:00.0</span></div>
+    <div class="stat"><span class="stat-label">Moves</span><span id="movesDisplay" class="stat-value">0</span></div>
+    <div class="stat"><span class="stat-label">Correct</span><span id="correctDisplay" class="stat-value">0 / 9</span></div>
+    <div class="stat"><span class="stat-label">Grid</span><span id="gridDisplay" class="stat-value">3×3</span></div>
+  </div>
+  <div id="puzzleBoard" class="puzzle-board"></div>
+  <div class="game-actions">
+    <button id="restartBtn" class="btn btn-secondary">🔀 Reshuffle</button>
+    <button id="changeDifficultyBtn" class="btn btn-secondary">⚙ Difficulty</button>
+    <button id="newPhotoBtn" class="btn btn-secondary">📷 New Photo</button>
+  </div>
+</div>
+
+<!-- RESULTS OVERLAY -->
+<div id="resultsOverlay" class="overlay" style="display:none;">
+  <div class="card results-card">
+    <h2>🎉 Puzzle Solved!</h2>
+    <div id="newBestBadge" class="best-badge" style="display:none;">🏆 New Best Time!</div>
+    <div class="results-grid">
+      <div><span class="stat-label">Time</span><span id="resultTime" class="stat-value mono"></span></div>
+      <div><span class="stat-label">Moves</span><span id="resultMoves" class="stat-value"></span></div>
+      <div><span class="stat-label">Difficulty</span><span id="resultDifficulty" class="stat-value"></span></div>
+    </div>
+    <h3>🏅 Best Times — <span id="resultsLbLabel">3×3</span></h3>
+    <table class="lb-table">
+      <thead><tr><th>#</th><th>Time</th><th>Moves</th><th>Date</th></tr></thead>
+      <tbody id="resultsLbBody"></tbody>
+    </table>
+    <div class="results-actions">
+      <button id="playAgainBtn" class="btn btn-primary">🔁 Play Again</button>
+      <button id="newPhotoBtn2" class="btn btn-secondary">📷 New Photo</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEADERBOARD MODAL -->
+<div id="leaderboardModal" class="overlay" style="display:none;">
+  <div class="card lb-card">
+    <div class="lb-header">
+      <h2>🏆 Leaderboard</h2>
+      <button id="closeLbBtn" class="btn-close">✕</button>
+    </div>
+    <div class="lb-tabs">
+      <button class="lb-tab active" data-size="3">3×3</button>
+      <button class="lb-tab" data-size="4">4×4</button>
+      <button class="lb-tab" data-size="5">5×5</button>
+    </div>
+    <table class="lb-table">
+      <thead><tr><th>#</th><th>Time</th><th>Moves</th><th>Date</th></tr></thead>
+      <tbody id="modalLbBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  const CAPTURE_SIZE = 600;
+  const LB_KEY = 'facePuzzleLeaderboardV1';
+
+  // ---- DOM refs ----
+  const cameraScreen = document.getElementById('cameraScreen');
+  const setupScreen = document.getElementById('setupScreen');
+  const gameScreen = document.getElementById('gameScreen');
+  const screens = { camera: cameraScreen, setup: setupScreen, game: gameScreen };
+
+  const video = document.getElementById('video');
+  const videoWrap = document.getElementById('videoWrap');
+  const cameraLoadingEl = document.getElementById('cameraLoading');
+  const cameraError = document.getElementById('cameraError');
+  const cameraErrorText = document.getElementById('cameraErrorText');
+  const retryCameraBtn = document.getElementById('retryCameraBtn');
+  const uploadBtn = document.getElementById('uploadBtn');
+  const fileInput = document.getElementById('fileInput');
+  const takePhotoBtn = document.getElementById('takePhotoBtn');
+
+  const previewImg = document.getElementById('previewImg');
+  const diffButtons = document.querySelectorAll('.diff-btn');
+  const numbersToggle = document.getElementById('numbersToggle');
+  const retakeBtn = document.getElementById('retakeBtn');
+  const startBtn = document.getElementById('startBtn');
+
+  const timerDisplay = document.getElementById('timerDisplay');
+  const movesDisplay = document.getElementById('movesDisplay');
+  const correctDisplay = document.getElementById('correctDisplay');
+  const gridDisplay = document.getElementById('gridDisplay');
+  const boardEl = document.getElementById('puzzleBoard');
+  const restartBtn = document.getElementById('restartBtn');
+  const changeDifficultyBtn = document.getElementById('changeDifficultyBtn');
+  const newPhotoBtn = document.getElementById('newPhotoBtn');
+
+  const resultsOverlay = document.getElementById('resultsOverlay');
+  const newBestBadge = document.getElementById('newBestBadge');
+  const resultTime = document.getElementById('resultTime');
+  const resultMoves = document.getElementById('resultMoves');
+  const resultDifficulty = document.getElementById('resultDifficulty');
+  const resultsLbLabel = document.getElementById('resultsLbLabel');
+  const resultsLbBody = document.getElementById('resultsLbBody');
+  const playAgainBtn = document.getElementById('playAgainBtn');
+  const newPhotoBtn2 = document.getElementById('newPhotoBtn2');
+
+  const lbToggleBtn = document.getElementById('lbToggleBtn');
+  const leaderboardModal = document.getElementById('leaderboardModal');
+  const closeLbBtn = document.getElementById('closeLbBtn');
+  const lbTabs = document.querySelectorAll('.lb-tab');
+  const modalLbBody = document.getElementById('modalLbBody');
+
+  // ---- State ----
+  let stream = null;
+  let capturedDataURL = null;
+  let gridSize = 3;
+  let board = [];          // board[cellIndex] = pieceIndex currently occupying that cell
+  let tiles = {};          // pieceIndex -> DOM element
+  let boardSizePx = 480;
+  let tileSize = boardSizePx / gridSize;
+  let moveCount = 0;
+  let startTime = 0;
+  let elapsed = 0;
+  let timerInterval = null;
+  let dragState = null;
+
+  const captureCanvas = document.createElement('canvas');
+  captureCanvas.width = CAPTURE_SIZE;
+  captureCanvas.height = CAPTURE_SIZE;
+  const captureCtx = captureCanvas.getContext('2d');
+
+  function showScreen(name){
+    Object.keys(screens).forEach(k => screens[k].style.display = 'none');
+    screens[name].style.display = 'flex';
+  }
+
+  // ================= CAMERA =================
+  async function initCamera(){
+    cameraError.style.display = 'none';
+    videoWrap.style.display = 'block';
+    cameraLoadingEl.style.display = 'flex';
+    video.style.visibility = 'hidden';
+    takePhotoBtn.disabled = true;
+
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      cameraLoadingEl.style.display = 'none';
+      showCameraError('Camera access is not supported in this browser.');
+      return;
+    }
+    try{
+      if(stream){ stream.getTracks().forEach(t => t.stop()); }
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 960 } },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play().catch(()=>{});
+      cameraLoadingEl.style.display = 'none';
+      video.style.visibility = 'visible';
+      takePhotoBtn.disabled = false;
+    }catch(err){
+      cameraLoadingEl.style.display = 'none';
+      let msg = 'Unable to access the camera.';
+      if(err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'){
+        msg = 'Camera permission was denied. Please allow camera access in your browser settings, then try again.';
+      } else if(err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError'){
+        msg = 'No camera was found on this device.';
+      } else if(err.name === 'NotReadableError'){
+        msg = 'The camera is already in use by another application.';
+      } else if(err.name === 'OverconstrainedError'){
+        msg = 'No camera matches the requested settings.';
+      }
+      showCameraError(msg);
+    }
+  }
+
+  function showCameraError(msg){
+    videoWrap.style.display = 'none';
+    cameraErrorText.textContent = msg;
+    cameraError.style.display = 'flex';
+    takePhotoBtn.disabled = true;
+  }
+
+  function takePhoto(){
+    if(!stream) return;
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if(!vw || !vh) return;
+    const side = Math.min(vw, vh);
+    const sx = (vw - side) / 2, sy = (vh - side) / 2;
+    captureCtx.save();
+    captureCtx.clearRect(0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
+    // Mirror the capture to match the mirrored live preview.
+    captureCtx.translate(CAPTURE_SIZE, 0);
+    captureCtx.scale(-1, 1);
+    captureCtx.drawImage(video, sx, sy, side, side, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
+    captureCtx.restore();
+    capturedDataURL = captureCanvas.toDataURL('image/png');
+    stream.getTracks().forEach(t => t.stop());
+    stream = null;
+    goToSetupScreen();
+  }
+
+  function handleFileUpload(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = new Image();
+      img.onload = function(){
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        captureCtx.clearRect(0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
+        captureCtx.drawImage(img, sx, sy, side, side, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE);
+        capturedDataURL = captureCanvas.toDataURL('image/png');
+        if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+        goToSetupScreen();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    fileInput.value = '';
+  }
+
+  function goToSetupScreen(){
+    previewImg.src = capturedDataURL;
+    showScreen('setup');
+  }
+
+  // ================= SETUP =================
+  diffButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      diffButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      gridSize = parseInt(btn.dataset.size, 10);
+    });
+  });
+
+  numbersToggle.addEventListener('change', () => {
+    document.body.classList.toggle('show-numbers', numbersToggle.checked);
+  });
+
+  retakeBtn.addEventListener('click', () => {
+    showScreen('camera');
+    initCamera();
+  });
+
+  startBtn.addEventListener('click', startPuzzle);
+
+  // ================= PUZZLE LOGIC =================
+  function buildIdentityArray(n){
+    return Array.from({ length: n * n }, (_, i) => i);
+  }
+
+  function isSolved(arr){
+    return arr.every((v, i) => v === i);
+  }
+
+  function countMisplaced(arr){
+    return arr.reduce((acc, v, i) => acc + (v !== i ? 1 : 0), 0);
+  }
+
+  function shuffleArray(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  // Because any two tiles can be swapped directly (this is not a sliding
+  // 15-puzzle with a single empty slot), every permutation is reachable —
+  // there is no parity constraint to worry about. We just avoid trivial
+  // shuffles that leave the puzzle mostly or fully solved already.
+  function generateShuffledBoard(n){
+    let arr;
+    const total = n * n;
+    const minMisplaced = Math.max(2, Math.floor(total * 0.5));
+    do{
+      arr = buildIdentityArray(n);
+      shuffleArray(arr);
+    } while(isSolved(arr) || countMisplaced(arr) < minMisplaced);
+    return arr;
+  }
+
+  function findCellOfPiece(pieceIndex){
+    return board.indexOf(pieceIndex);
+  }
+
+  function calcBoardSize(){
+    const available = Math.min(window.innerWidth * 0.92, window.innerHeight * 0.55, 560);
+    boardSizePx = Math.max(240, Math.floor(available));
+    tileSize = boardSizePx / gridSize;
+    boardEl.style.width = boardSizePx + 'px';
+    boardEl.style.height = boardSizePx + 'px';
+  }
+
+  function createTiles(){
+    boardEl.innerHTML = '';
+    tiles = {};
+    for(let p = 0; p < gridSize * gridSize; p++){
+      const correctRow = Math.floor(p / gridSize);
+      const correctCol = p % gridSize;
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.piece = p;
+      tile.style.width = tileSize + 'px';
+      tile.style.height = tileSize + 'px';
+      tile.style.backgroundImage = `url(${capturedDataURL})`;
+      tile.style.backgroundSize = `${boardSizePx}px ${boardSizePx}px`;
+      tile.style.backgroundPosition = `-${correctCol * tileSize}px -${correctRow * tileSize}px`;
+
+      const label = document.createElement('span');
+      label.className = 'tile-label';
+      label.textContent = p + 1;
+      tile.appendChild(label);
+
+      tile.addEventListener('pointerdown', onPointerDown);
+      tile.addEventListener('pointermove', onPointerMove);
+      tile.addEventListener('pointerup', onPointerUp);
+      tile.addEventListener('pointercancel', onPointerCancel);
+
+      boardEl.appendChild(tile);
+      tiles[p] = tile;
+    }
+    renderPositions(false);
+  }
+
+  function renderPositions(animate){
+    for(let cell = 0; cell < board.length; cell++){
+      const p = board[cell];
+      const tile = tiles[p];
+      const row = Math.floor(cell / gridSize);
+      const col = cell % gridSize;
+      if(!animate) tile.style.transition = 'none';
+      tile.style.transform = `translate(${col * tileSize}px, ${row * tileSize}px)`;
+      if(!animate){
+        void tile.offsetWidth; // force reflow
+        tile.style.transition = '';
+      }
+    }
+  }
+
+  function refreshTileGeometry(){
+    for(let p = 0; p < gridSize * gridSize; p++){
+      const tile = tiles[p];
+      if(!tile) continue;
+      const correctRow = Math.floor(p / gridSize);
+      const correctCol = p % gridSize;
+      tile.style.width = tileSize + 'px';
+      tile.style.height = tileSize + 'px';
+      tile.style.backgroundSize = `${boardSizePx}px ${boardSizePx}px`;
+      tile.style.backgroundPosition = `-${correctCol * tileSize}px -${correctRow * tileSize}px`;
+    }
+    renderPositions(false);
+  }
+
+  function updateCorrectness(){
+    let correctCount = 0;
+    for(let cell = 0; cell < board.length; cell++){
+      const p = board[cell];
+      const tile = tiles[p];
+      if(p === cell){
+        tile.classList.add('correct');
+        correctCount++;
+      } else {
+        tile.classList.remove('correct');
+      }
+    }
+    correctDisplay.textContent = `${correctCount} / ${board.length}`;
+    return correctCount;
+  }
+
+  function checkWin(){
+    if(isSolved(board)){
+      stopTimer();
+      finalizeResult();
+    }
+  }
+
+  function startPuzzle(){
+    board = generateShuffledBoard(gridSize);
+    moveCount = 0;
+    movesDisplay.textContent = '0';
+    gridDisplay.textContent = `${gridSize}×${gridSize}`;
+    correctDisplay.textContent = `0 / ${gridSize * gridSize}`;
+    document.body.classList.toggle('show-numbers', numbersToggle.checked);
+
+    showScreen('game');
+    calcBoardSize();
+    createTiles();
+    updateCorrectness();
+    startTimer();
+  }
+
+  // ---- Drag & drop (Pointer Events unify mouse + touch) ----
+  function onPointerDown(e){
+    e.preventDefault();
+    const tile = e.currentTarget;
+    try{ tile.setPointerCapture(e.pointerId); }catch(err){}
+    const pieceIndex = parseInt(tile.dataset.piece, 10);
+    const fromCell = findCellOfPiece(pieceIndex);
+    dragState = {
+      pieceIndex,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      fromCell
+    };
+    tile.classList.add('dragging');
+    tile.style.transition = 'none';
+  }
+
+  function onPointerMove(e){
+    if(!dragState || e.pointerId !== dragState.pointerId) return;
+    const tile = tiles[dragState.pieceIndex];
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    const baseCol = dragState.fromCell % gridSize;
+    const baseRow = Math.floor(dragState.fromCell / gridSize);
+    const baseX = baseCol * tileSize;
+    const baseY = baseRow * tileSize;
+    tile.style.transform = `translate(${baseX + dx}px, ${baseY + dy}px)`;
+  }
+
+  function onPointerUp(e){
+    if(!dragState || e.pointerId !== dragState.pointerId) return;
+    const tile = tiles[dragState.pieceIndex];
+    try{ tile.releasePointerCapture(e.pointerId); }catch(err){}
+    tile.classList.remove('dragging');
+    tile.style.transition = '';
+
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
+    const baseCol = dragState.fromCell % gridSize;
+    const baseRow = Math.floor(dragState.fromCell / gridSize);
+    const newX = baseCol * tileSize + dx;
+    const newY = baseRow * tileSize + dy;
+
+    let col = Math.round(newX / tileSize);
+    let row = Math.round(newY / tileSize);
+    col = Math.max(0, Math.min(gridSize - 1, col));
+    row = Math.max(0, Math.min(gridSize - 1, row));
+    const targetCell = row * gridSize + col;
+    const fromCell = dragState.fromCell;
+
+    if(targetCell !== fromCell){
+      [board[fromCell], board[targetCell]] = [board[targetCell], board[fromCell]];
+      moveCount++;
+      movesDisplay.textContent = moveCount;
+    }
+
+    renderPositions(true);
+    updateCorrectness();
+    checkWin();
+    dragState = null;
+  }
+
+  function onPointerCancel(e){
+    if(!dragState || e.pointerId !== dragState.pointerId) return;
+    const tile = tiles[dragState.pieceIndex];
+    tile.classList.remove('dragging');
+    tile.style.transition = '';
+    renderPositions(true);
+    dragState = null;
+  }
+
+  // ---- Timer ----
+  function startTimer(){
+    startTime = Date.now();
+    elapsed = 0;
+    timerDisplay.textContent = formatTime(0);
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      elapsed = Date.now() - startTime;
+      timerDisplay.textContent = formatTime(elapsed);
+    }, 100);
+  }
+
+  function stopTimer(){
+    clearInterval(timerInterval);
+    elapsed = Date.now() - startTime;
+    timerDisplay.textContent = formatTime(elapsed);
+  }
+
+  function formatTime(ms){
+    const totalTenths = Math.floor(ms / 100);
+    const tenths = totalTenths % 10;
+    const totalSeconds = Math.floor(totalTenths / 10);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60);
+    return `${pad(minutes)}:${pad(seconds)}.${tenths}`;
+  }
+
+  function pad(n){
+    return n.toString().padStart(2, '0');
+  }
+
+  // ---- Game screen actions ----
+  restartBtn.addEventListener('click', () => {
+    stopTimer();
+    startPuzzle();
+  });
+
+  changeDifficultyBtn.addEventListener('click', () => {
+    stopTimer();
+    showScreen('setup');
+  });
+
+  newPhotoBtn.addEventListener('click', () => {
+    stopTimer();
+    showScreen('camera');
+    initCamera();
+  });
+
+  // ================= RESULTS & LEADERBOARD =================
+  function loadLeaderboard(){
+    try{
+      const raw = localStorage.getItem(LB_KEY);
+      if(!raw) return { 3: [], 4: [], 5: [] };
+      const parsed = JSON.parse(raw);
+      return { 3: parsed[3] || [], 4: parsed[4] || [], 5: parsed[5] || [] };
+    }catch(e){
+      return { 3: [], 4: [], 5: [] };
+    }
+  }
+
+  function saveLeaderboardObj(lb){
+    try{ localStorage.setItem(LB_KEY, JSON.stringify(lb)); }catch(e){}
+  }
+
+  function saveScore(n, timeMs, moves){
+    const lb = loadLeaderboard();
+    const list = lb[n] || [];
+    const entry = {
+      date: new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }),
+      time: formatTime(timeMs),
+      timeMs,
+      moves,
+      difficulty: `${n}×${n}`
+    };
+    list.push(entry);
+    list.sort((a, b) => a.timeMs - b.timeMs);
+    const top5 = list.slice(0, 5);
+    lb[n] = top5;
+    saveLeaderboardObj(lb);
+    return top5.includes(entry);
+  }
+
+  function renderLeaderboardRows(tbody, n){
+    const lb = loadLeaderboard();
+    const list = lb[n] || [];
+    tbody.innerHTML = '';
+    if(list.length === 0){
+      tbody.innerHTML = '<tr><td colspan="4" class="empty">No records yet — be the first!</td></tr>';
+      return;
+    }
+    list.forEach((entry, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>#${idx + 1}</td><td>${entry.time}</td><td>${entry.moves}</td><td>${entry.date}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function finalizeResult(){
+    const timeMs = elapsed;
+    const isNewBest = saveScore(gridSize, timeMs, moveCount);
+    resultTime.textContent = formatTime(timeMs);
+    resultMoves.textContent = moveCount;
+    resultDifficulty.textContent = `${gridSize}×${gridSize}`;
+    resultsLbLabel.textContent = `${gridSize}×${gridSize}`;
+    newBestBadge.style.display = isNewBest ? 'inline-block' : 'none';
+    renderLeaderboardRows(resultsLbBody, gridSize);
+    resultsOverlay.style.display = 'flex';
+  }
+
+  playAgainBtn.addEventListener('click', () => {
+    resultsOverlay.style.display = 'none';
+    startPuzzle();
+  });
+
+  newPhotoBtn2.addEventListener('click', () => {
+    resultsOverlay.style.display = 'none';
+    showScreen('camera');
+    initCamera();
+  });
+
+  // ---- Leaderboard modal ----
+  function setModalTab(n){
+    lbTabs.forEach(t => t.classList.toggle('active', parseInt(t.dataset.size, 10) === n));
+    renderLeaderboardRows(modalLbBody, n);
+  }
+
+  lbToggleBtn.addEventListener('click', () => {
+    setModalTab(gridSize || 3);
+    leaderboardModal.style.display = 'flex';
+  });
+
+  closeLbBtn.addEventListener('click', () => {
+    leaderboardModal.style.display = 'none';
+  });
+
+  leaderboardModal.addEventListener('click', (e) => {
+    if(e.target === leaderboardModal) leaderboardModal.style.display = 'none';
+  });
+
+  lbTabs.forEach(tab => {
+    tab.addEventListener('click', () => setModalTab(parseInt(tab.dataset.size, 10)));
+  });
+
+  // ================= RESIZE =================
+  let resizeTimeout = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      if(gameScreen.style.display === 'none') return;
+      calcBoardSize();
+      refreshTileGeometry();
+    }, 150);
+  });
+
+  // ================= WIRE UP CAMERA CONTROLS =================
+  takePhotoBtn.addEventListener('click', takePhoto);
+  retryCameraBtn.addEventListener('click', initCamera);
+  uploadBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', handleFileUpload);
+
+  // ================= INIT =================
+  showScreen('camera');
+  initCamera();
+})();
+</script>
+</body>
+</html>
