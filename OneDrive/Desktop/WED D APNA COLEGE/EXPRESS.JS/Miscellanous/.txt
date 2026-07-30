@@ -1,0 +1,15 @@
+OOPS - TO STRUCTURE THE CODE
+
+
+OBJECT PROROTYPE - MECHANISM BY WHICH JS OBJ INHERITS FEATURES FROM ANOTHER OBJECT
+
+see in code 
+
+
+factory functions - used to create objects  - make copy
+
+New Operator - constructor same as factory functions but does not copy 
+
+classes = template for creating objects
+
+constructor method is special of class for creating and initializing an object instance of that class 

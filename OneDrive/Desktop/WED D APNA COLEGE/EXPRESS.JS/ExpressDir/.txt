@@ -1,0 +1,20 @@
+express.js is a framework 
+
+works 
+1) listen for incoming request
+2) parse
+3) match response with routes
+4) response
+
+
+port- logical endpoint of network connection used to exchange info b/w web server and client
+
+routes - get put 
+
+for installing globally - npm install -g nodemon
+
+
+
+EJS-embedded javascript templates
+
+- that let you generate html markup with plain javascript.

@@ -1,0 +1,139 @@
+h3 {
+    background-color:antiquewhite !important;
+}
+
+
+/* universal selector css for quara  */
+*{
+    font-family: 'Courier New';
+    
+}
+
+/* element selector css for quara */
+
+h3{
+    color: purple;
+}  
+
+h1{
+    color: #b92b27 ;
+}
+
+
+/* ID selector css for quara */
+#login{
+    background-color: white;
+}
+
+
+
+#signup{
+    background-color: #b92b27;
+    color: white;
+}
+
+/* class selector css for quara */
+.upvote{
+    background-color:aquamarine;
+    color: black;
+}
+
+/* descendant selector css for quara */
+.post a{
+   color:purple;
+   background-color: yellow;
+}
+
+nav ul li a {
+    color: rebeccapurple;
+}
+/* adjacent sibling selector css for quara */
+p + h3{
+    text-decoration: underline;
+}
+
+.upvote + button{
+    background-color: orange;
+    color: white;
+}
+
+/* child selector css for quara */
+div>input{
+    background-color: lightgrey;
+    color: black;
+}
+
+/* attribute selector css for quara */
+input[type="text"]{
+    color: black;
+}
+input[type="password"]{
+    color: black;
+}
+input[type]{
+    background-color: lightyellow;
+    
+}
+
+#myId{
+    color: green
+}
+
+/* pseudo class selector css for quara */
+
+button:hover{
+    background-color: black;
+    color: white;
+}
+/* hover pseudo class css for quara */
+h3:hover{
+    text-decoration: none;
+}
+
+/* active pseudo class css for quara  */
+
+button:active{
+    background-color: red;
+    color: black;
+}
+p:active{
+    color: blue;
+    font-weight: bold;
+}
+
+/* checked pseudo class css for quara */
+
+input[type="radio"]:checked + label{
+    color:red;
+    font-weight: bold;
+}
+
+/* nth-type pseudo class css for quara  */
+div:nth-of-type(2n){
+    background-color: red;
+}
+
+/* first-letter pseudo class css for quara */
+h1::first-letter{
+    font-size: 200%;
+    color: blue;
+}
+
+/* first-line pseudo class css for quara */
+p::first-line{
+    color: orange;
+}
+
+/* selection pseudo class css for quara  */
+p::selection{
+    background-color: yellow;
+}
+
+
+h3{
+    background-color: yellow;
+}
+
+h3{
+background: blue;
+}

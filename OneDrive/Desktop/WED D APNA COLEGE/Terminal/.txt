@@ -1,0 +1,55 @@
+terminal 
+
+ls-listfiles/show my files
+
+pwd-print working directory/where am i
+
+clear-clear screen
+
+
+Navigation
+
+cd-change directory / ex-cd Desktop
+cd..-back button
+
+
+Path
+
+cd /Users/saifkhan/AppData/Local - Absolute
+cd AppData/Local - Relative
+
+
+
+/-root directory
+~-home directory
+
+
+
+Making directory
+
+mkdir
+
+
+Flags
+
+manual command
+man ls-give info about ls command
+man mkdir-give info about mkdir command
+
+ls -l 
+ls -a 
+ls -la 
+
+
+Touch command
+
+touch index.html
+
+
+
+Deleting Files&Folders
+
+
+rm-remove files
+rmdir-remove empty folders
+rm-rf-remove any folders

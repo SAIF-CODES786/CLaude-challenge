@@ -1,0 +1,42 @@
+Interpolation syntax - <%=%>
+- to embedding exp into marked up text.
+
+
+for conditional statements
+<%
+
+
+views - it is used as a template (html file)
+in this directory we can make .ejs file for all templates work 
+app.get/set('/', (req, res) => {
+    res.render('home.ejs');
+});
+
+
+public - app.use(express.static("public"));
+it is used for html,css,js all files together 
+
+
+Includes-use to create subtemplates
+
+
+
+GET Request
+
+Retrieves data from a server.
+
+Parameters are sent in the URL query string.
+
+Commonly used for searches or fetching information.
+
+Example: https://example.com/search?query=hello
+
+POST Request
+
+Sends data to the server (like form submissions).
+
+Parameters are sent in the request body, not visible in the URL.
+
+More secure for sensitive data (e.g., passwords).
+
+Example: Sending login credentials via POST.
